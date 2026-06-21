@@ -37,12 +37,15 @@
 UPSTREAM_PROXY_URL=http://127.0.0.1:7890
 ```
 
-Node/Vercel 版本支持两种代理写法：
+Node/Vercel 版本支持以下代理格式：
 
 1. **直接 HTTP(S) 代理**
-   - 例如：`http://127.0.0.1:7890`
-2. **反向代理模板**
-   - 例如：`https://proxy.example.com/fetch?url={url}`
+   - `http://ip:port`
+   - `http://user:pass@ip:port`
+2. **冒号分隔简写**
+   - `ip:port:user:pass`（自动转换为 `http://user:pass@ip:port`）
+3. **反向代理模板**
+   - `https://proxy.example.com/fetch?url={url}`
 
 ### 动态代理
 每次请求可通过 query 参数覆盖：

@@ -23,6 +23,27 @@ function resolveProxyValue(options = {}, env) {
   return String(options.proxy || env.UPSTREAM_PROXY_URL || '').trim();
 }
 
+function isProxyTemplate(proxy) {
+  return proxy.includes('{url}') || proxy.includes('{{url}}') || proxy.endsWith('=') || proxy.includes('?url=');
+}
+
+function parseProxyToUrl(proxy) {
+  if (!proxy) return '';
+  if (proxy.startsWith('http://') || proxy.startsWith('https://')) return proxy;
+
+  const parts = proxy.split(':');
+  if (parts.length === 2) {
+    const [host, port] = parts;
+    return `http://${host}:${port}`;
+  }
+  if (parts.length === 4) {
+    const [host, port, user, pass] = parts;
+    return `http://${user}:${pass}@${host}:${port}`;
+  }
+
+  return proxy;
+}
+
 function buildProxyTarget(proxy, targetUrl) {
   if (!proxy) return targetUrl;
   if (proxy.includes('{{url}}')) {
@@ -108,7 +129,7 @@ async function requestText(url, env, options = {}) {
   const { timeoutMs = getTimeoutMs(env), proxy = '', ...fetchOptions } = options;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  const requestUrl = proxy ? buildProxyTarget(proxy, url) : url;
+  const requestUrl = proxy ? (isProxyTemplate(proxy) ? buildProxyTarget(proxy, url) : buildProxyTarget(parseProxyToUrl(proxy), url)) : url;
 
   try {
     const response = await fetch(requestUrl, { ...fetchOptions, signal: controller.signal });

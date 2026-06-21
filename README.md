@@ -68,7 +68,11 @@ API_KEY=your-secret-key
 - `DOUYIN_COOKIE`: 可选，部分房间能拿到更完整的数据
 - `HOST`: 默认 `127.0.0.1`，建议保持本地监听
 - `UPSTREAM_TIMEOUT_MS`: 上游请求超时，默认 `10000`
-- `UPSTREAM_PROXY_URL`: 可选静态代理；Node 版本支持直接 HTTP(S) 代理（如 `http://127.0.0.1:7890`）或反向代理模板（如 `https://proxy.example.com/fetch?url={url}`）
+- `UPSTREAM_PROXY_URL`: 可选静态代理；Node 版本支持以下格式：
+  - `http://ip:port`
+  - `http://user:pass@ip:port`
+  - `ip:port:user:pass`（冒号分隔简写，自动转换）
+  - 反向代理模板：`https://proxy.example.com/fetch?url={url}`
 - `API_KEY`: 如果设置，`/api/room` 需要 `X-API-Key` 或 `Authorization: Bearer <key>`
 
 > 有些房间匿名抓取会返回不完整数据，或者直接空 body。遇到这种情况，把浏览器里的 Cookie 配到 `DOUYIN_COOKIE`。

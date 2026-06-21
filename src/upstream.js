@@ -62,6 +62,26 @@ function buildProxyTarget(proxy, targetUrl) {
   return `${proxy}${encodeURIComponent(targetUrl)}`;
 }
 
+function parseProxyToUrl(proxy) {
+  if (!proxy) return '';
+
+  if (proxy.startsWith('http://') || proxy.startsWith('https://')) {
+    return proxy;
+  }
+
+  const parts = proxy.split(':');
+  if (parts.length === 2) {
+    const [host, port] = parts;
+    return `http://${host}:${port}`;
+  }
+  if (parts.length === 4) {
+    const [host, port, user, pass] = parts;
+    return `http://${user}:${pass}@${host}:${port}`;
+  }
+
+  return proxy;
+}
+
 function buildRoomEnterRequest(webRid, aid = DEFAULT_AID) {
   const params = buildRoomEnterParams(webRid, aid);
   const abogus = new ABogus(undefined, DEFAULT_USER_AGENT);
@@ -137,7 +157,8 @@ async function requestText(url, options = {}) {
     if (isProxyTemplate(proxy)) {
       requestUrl = buildProxyTarget(proxy, url);
     } else {
-      finalOptions.dispatcher = new ProxyAgent(proxy);
+      const proxyUrl = parseProxyToUrl(proxy);
+      finalOptions.dispatcher = new ProxyAgent(proxyUrl);
     }
   }
 

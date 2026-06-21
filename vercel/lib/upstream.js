@@ -24,6 +24,23 @@ function isProxyTemplate(proxy) {
   return proxy.includes('{url}') || proxy.includes('{{url}}') || proxy.endsWith('=') || proxy.includes('?url=');
 }
 
+function parseProxyToUrl(proxy) {
+  if (!proxy) return '';
+  if (proxy.startsWith('http://') || proxy.startsWith('https://')) return proxy;
+
+  const parts = proxy.split(':');
+  if (parts.length === 2) {
+    const [host, port] = parts;
+    return `http://${host}:${port}`;
+  }
+  if (parts.length === 4) {
+    const [host, port, user, pass] = parts;
+    return `http://${user}:${pass}@${host}:${port}`;
+  }
+
+  return proxy;
+}
+
 function buildProxyTarget(proxy, targetUrl) {
   if (!proxy) {
     return targetUrl;
@@ -135,7 +152,8 @@ async function requestText(url, options = {}) {
     if (isProxyTemplate(proxy)) {
       requestUrl = buildProxyTarget(proxy, url);
     } else {
-      finalOptions.dispatcher = new ProxyAgent(proxy);
+      const proxyUrl = parseProxyToUrl(proxy);
+      finalOptions.dispatcher = new ProxyAgent(proxyUrl);
     }
   }
 

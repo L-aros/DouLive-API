@@ -34,8 +34,6 @@
 ### 静态代理
 Workers 版本只支持**反向代理模板/前缀**，不支持原生 HTTP 代理地址。
 
-例如：
-
 ```env
 UPSTREAM_PROXY_URL=https://proxy.example.com/fetch?url={url}
 ```
