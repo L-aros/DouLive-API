@@ -15,6 +15,7 @@ const ROOM_HTML_STATE_REGEX = /(\{\\"state\\":.*?)\]\\n"\]\)/;
 
 let guestCookieCache = null;
 let htmlNonceCache = null;
+let mobileCooldownUntil = 0;
 
 function resolveProxyValue(options = {}) {
   return (options.proxy || process.env.UPSTREAM_PROXY_URL || '').trim();
@@ -458,9 +459,35 @@ async function fetchRoomInfoByHtml(webRid, options = {}) {
   };
 }
 
+function createMobileUpstreamError(payload) {
+  const statusCode = Number(payload?.status_code);
+  const message =
+    payload?.data?.message ||
+    payload?.data?.prompts ||
+    payload?.message ||
+    'Unknown mobile upstream error';
+
+  const error = new Error(
+    `Mobile fallback rejected: status_code=${statusCode || 'unknown'}, message=${message}`
+  );
+
+  error.code = statusCode === 10011 ? 'MOBILE_REJECTED_10011' : 'MOBILE_UPSTREAM_ERROR';
+  error.upstreamStatusCode = statusCode;
+  error.riskSuspected = statusCode === 10011;
+
+  return error;
+}
+
 async function fetchRoomInfoByMobile(webRid, secUid, options = {}) {
   if (!secUid || typeof secUid !== 'string') {
     throw new Error('Mobile fallback requires secUid');
+  }
+
+  if (Date.now() < mobileCooldownUntil) {
+    throw Object.assign(
+      new Error('Mobile fallback skipped due to recent upstream rejection (cooldown active)'),
+      { code: 'MOBILE_COOLDOWN', riskSuspected: true }
+    );
   }
 
   const aid = options.aid || DEFAULT_AID;
@@ -486,9 +513,18 @@ async function fetchRoomInfoByMobile(webRid, secUid, options = {}) {
   }
 
   const payload = parsePayload(text, response);
+
+  if (payload?.status_code !== 0) {
+    const error = createMobileUpstreamError(payload);
+    if (error.riskSuspected) {
+      mobileCooldownUntil = Date.now() + 60_000;
+    }
+    throw error;
+  }
+
   const room = payload?.data?.room;
   if (!room) {
-    throw new Error('Mobile fallback payload did not contain room data');
+    throw new Error('Mobile fallback succeeded but did not contain room data');
   }
 
   return {
@@ -501,8 +537,20 @@ async function fetchRoomInfoByMobile(webRid, secUid, options = {}) {
   };
 }
 
+function hasCompleteRoomTimes(payload) {
+  const room = payload?.data?.data?.[0];
+  return Boolean(
+    room &&
+    room.create_time != null &&
+    room.start_time != null &&
+    room.finish_time != null
+  );
+}
+
+const MOBILE_TIME_FIELDS = ['create_time', 'start_time', 'finish_time'];
+
 async function enrichTimeFromMobile(webRid, secUid, basePayload, options = {}) {
-  if (!secUid) {
+  if (!secUid || hasCompleteRoomTimes(basePayload)) {
     return basePayload;
   }
 
@@ -512,18 +560,14 @@ async function enrichTimeFromMobile(webRid, secUid, basePayload, options = {}) {
     const baseRoom = basePayload?.data?.data?.[0];
 
     if (mobileRoom && baseRoom) {
-      if (mobileRoom.create_time != null && baseRoom.create_time == null) {
-        baseRoom.create_time = mobileRoom.create_time;
-      }
-      if (mobileRoom.start_time != null && baseRoom.start_time == null) {
-        baseRoom.start_time = mobileRoom.start_time;
-      }
-      if (mobileRoom.finish_time != null && baseRoom.finish_time == null) {
-        baseRoom.finish_time = mobileRoom.finish_time;
+      for (const field of MOBILE_TIME_FIELDS) {
+        if (baseRoom[field] == null && mobileRoom[field] != null) {
+          baseRoom[field] = mobileRoom[field];
+        }
       }
     }
-  } catch {
-    // best-effort enrichment
+  } catch (error) {
+    console.warn(`[mobile-time-enrichment] ${error.code || 'ERROR'}: ${error.message}`);
   }
 
   return basePayload;

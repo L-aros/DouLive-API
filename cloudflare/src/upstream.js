@@ -13,6 +13,7 @@ const ROOM_HTML_STATE_REGEX = /(\{\\"state\\":.*?)\]\\n"\]\)/;
 
 let guestCookieCache = null;
 let htmlNonceCache = null;
+let mobileCooldownUntil = 0;
 
 function getTimeoutMs(env) {
   const value = Number(env.UPSTREAM_TIMEOUT_MS || 10000);
@@ -393,8 +394,34 @@ async function fetchRoomInfoByHtml(webRid, env, options = {}) {
   };
 }
 
+function createMobileUpstreamError(payload) {
+  const statusCode = Number(payload?.status_code);
+  const message =
+    payload?.data?.message ||
+    payload?.data?.prompts ||
+    payload?.message ||
+    'Unknown mobile upstream error';
+
+  const error = new Error(
+    `Mobile fallback rejected: status_code=${statusCode || 'unknown'}, message=${message}`
+  );
+
+  error.code = statusCode === 10011 ? 'MOBILE_REJECTED_10011' : 'MOBILE_UPSTREAM_ERROR';
+  error.upstreamStatusCode = statusCode;
+  error.riskSuspected = statusCode === 10011;
+
+  return error;
+}
+
 async function fetchRoomInfoByMobile(webRid, secUid, env, options = {}) {
   if (!secUid || typeof secUid !== 'string') throw new Error('Mobile fallback requires secUid');
+
+  if (Date.now() < mobileCooldownUntil) {
+    throw Object.assign(
+      new Error('Mobile fallback skipped due to recent upstream rejection (cooldown active)'),
+      { code: 'MOBILE_COOLDOWN', riskSuspected: true }
+    );
+  }
 
   const aid = options.aid || DEFAULT_AID;
   const url = new URL(MOBILE_ROOM_INFO_URL);
@@ -416,8 +443,17 @@ async function fetchRoomInfoByMobile(webRid, secUid, env, options = {}) {
 
   if (!response.ok) throw new Error(`Mobile fallback request failed with status ${response.status}. Body preview: ${text.slice(0, 200)}`);
   const payload = parsePayload(text, response);
+
+  if (payload?.status_code !== 0) {
+    const error = createMobileUpstreamError(payload);
+    if (error.riskSuspected) {
+      mobileCooldownUntil = Date.now() + 60_000;
+    }
+    throw error;
+  }
+
   const room = payload?.data?.room;
-  if (!room) throw new Error('Mobile fallback payload did not contain room data');
+  if (!room) throw new Error('Mobile fallback succeeded but did not contain room data');
 
   return {
     payload: buildMobileFallbackPayload(room),
@@ -425,19 +461,36 @@ async function fetchRoomInfoByMobile(webRid, secUid, env, options = {}) {
   };
 }
 
+function hasCompleteRoomTimes(payload) {
+  const room = payload?.data?.data?.[0];
+  return Boolean(
+    room &&
+    room.create_time != null &&
+    room.start_time != null &&
+    room.finish_time != null
+  );
+}
+
+const MOBILE_TIME_FIELDS = ['create_time', 'start_time', 'finish_time'];
+
 async function enrichTimeFromMobile(webRid, secUid, basePayload, env, options = {}) {
-  if (!secUid) return basePayload;
+  if (!secUid || hasCompleteRoomTimes(basePayload)) {
+    return basePayload;
+  }
+
   try {
     const mobileResult = await fetchRoomInfoByMobile(webRid, secUid, env, options);
     const mobileRoom = mobileResult?.payload?.data?.data?.[0];
     const baseRoom = basePayload?.data?.data?.[0];
     if (mobileRoom && baseRoom) {
-      if (mobileRoom.create_time != null && baseRoom.create_time == null) baseRoom.create_time = mobileRoom.create_time;
-      if (mobileRoom.start_time != null && baseRoom.start_time == null) baseRoom.start_time = mobileRoom.start_time;
-      if (mobileRoom.finish_time != null && baseRoom.finish_time == null) baseRoom.finish_time = mobileRoom.finish_time;
+      for (const field of MOBILE_TIME_FIELDS) {
+        if (baseRoom[field] == null && mobileRoom[field] != null) {
+          baseRoom[field] = mobileRoom[field];
+        }
+      }
     }
-  } catch {
-    // best effort only
+  } catch (error) {
+    console.warn(`[mobile-time-enrichment] ${error.code || 'ERROR'}: ${error.message}`);
   }
   return basePayload;
 }
