@@ -162,13 +162,15 @@ GET /api/room?web_rid=799834884246&proxy=http://127.0.0.1:7890
 - `permissions`: 聊天、礼物、分享、投屏、粉丝团等
 - `interaction`: 连麦相关能力
 - `commerce`: 商品、购物车、付费直播相关字段
-- `meta`: `enterMode`、`serverTimeMs`
+- `meta`: `enterMode`、`serverTimeMs`、`proxyUsed`、`statsSource`
 
 ### 状态字段说明
 
 - `room.status.roomStatus`: 统一后的房间状态文本，如 `normal` / `radio` / `ended` / `unknown`
 - `room.status.roomStatusCode`: 房间状态码，若上游未提供数值则可能为 `null`
 - `room.status.isLive`: 同时根据 HLS 与 FLV 拉流地址判断
+- `meta.proxyUsed`: 本次请求是否实际使用了代理
+- `meta.statsSource`: 统计数据主要来自哪个数据源，如 `web-enter`、`mobile-fallback`、`html-fallback`
 
 如果后面你想继续精简字段，优先改 `src/normalize.js`。
 

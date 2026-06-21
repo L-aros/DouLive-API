@@ -203,7 +203,8 @@ function normalizeRoom(payload, webRid, upstream) {
     meta: {
       enterMode: root.enter_mode ?? null,
       serverTimeMs: payload.extra?.now ?? null,
-      proxyUsed: Boolean(upstream?.proxyUsed)
+      proxyUsed: Boolean(upstream?.proxyUsed),
+      statsSource: upstream?.statsSource || 'unknown'
     }
   };
 }

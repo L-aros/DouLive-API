@@ -457,6 +457,7 @@ async function fetchRoomInfoByWeb(webRid, options = {}) {
               aid,
               url: requestConfig.url,
               proxyUsed: Boolean(resolveProxyValue(options)),
+              statsSource: 'web-enter'
             },
           };
         } catch (error) {
@@ -517,6 +518,7 @@ async function fetchRoomInfoByHtml(webRid, options = {}) {
       aid,
       url,
       proxyUsed: Boolean(resolveProxyValue(options)),
+      statsSource: 'html-fallback'
     },
     secUid: result.secUid,
   };
@@ -604,6 +606,7 @@ async function fetchRoomInfoByMobile(webRid, secUid, options = {}) {
       aid,
       url: url.toString(),
       proxyUsed: Boolean(resolveProxyValue(options)),
+      statsSource: 'mobile-fallback'
     },
   };
 }
