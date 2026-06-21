@@ -30,11 +30,3 @@ jobs:
           node --check vercel/api/health.js
           node --check vercel/api/room.js
           node --check 'vercel/api/room/[webRid].js'
-
-      - name: Check Cloudflare variant
-        run: |
-          node --check cloudflare/src/normalize.js
-          node --check cloudflare/src/signature.js
-          node --check cloudflare/src/abogus.js
-          node --check cloudflare/src/upstream.js
-          node --check cloudflare/src/index.js

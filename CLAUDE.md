@@ -19,21 +19,17 @@ npm run check
 
 # Syntax check Vercel variant
 cd vercel && node --check lib/upstream.js && node --check lib/room-handler.js
-
-# Syntax check Cloudflare variant
-node --check cloudflare/src/upstream.js && node --check cloudflare/src/index.js
 ```
 
 No test suite exists. Validation is done via syntax checks and live endpoint testing.
 
 ## Architecture
 
-Three deployment targets share the same logic but have different entry points and runtime constraints:
+Two deployment targets share the same logic but have different entry points and runtime constraints:
 
 ```
 src/            Node.js standalone (default: localhost only)
 vercel/         Vercel Serverless Functions
-cloudflare/     Cloudflare Workers (ESM only)
 ```
 
 ### Shared modules (duplicated per target, not extracted to a shared package)
@@ -45,7 +41,7 @@ cloudflare/     Cloudflare Workers (ESM only)
 | `abogus.js` | Generate Douyin `a_bogus` request signature |
 | `signature.js` | Generate `__ac_signature` for HTML fallback requests |
 
-When changing logic, update all three variants (`src/`, `vercel/lib/`, `cloudflare/src/`).
+When changing logic, update both variants (`src/`, `vercel/lib/`).
 
 ### Fallback chain (in `upstream.js → fetchRoomEnter`)
 
@@ -72,12 +68,6 @@ Mobile reflow (`webcast.amemv.com`) is unreliable (risk control, 10011 errors). 
 - Has a 30-second in-memory room cache (`ROOM_CACHE_TTL_MS`) to avoid repeated upstream calls within a single function instance
 - Default upstream timeout is 7 seconds (Vercel free tier has 10s function execution limit)
 
-### Cloudflare variant specifics
-
-- ESM modules (`import/export`)
-- Cannot use direct HTTP proxy; only reverse-proxy templates (`{url}` substitution)
-- Uses `env` object for environment variables instead of `process.env`
-
 ## Key response shape
 
 The normalized response (`src/normalize.js`) always returns:
@@ -94,7 +84,7 @@ The normalized response (`src/normalize.js`) always returns:
 |---|---|---|
 | `ACCESS_TOKEN` | (empty) | Unlocks proxy features; without it, API is still callable but direct-only |
 | `UPSTREAM_PROXY_URL` | (empty) | Preset proxy, only used with valid token |
-| `UPSTREAM_TIMEOUT_MS` | `10000` (root/cloudflare) / `7000` (vercel) | Per-upstream-request timeout |
+| `UPSTREAM_TIMEOUT_MS` | `10000` (root) / `7000` (vercel) | Per-upstream-request timeout |
 | `DOUYIN_COOKIE` | (empty) | Optional browser cookie for richer upstream data |
 | `HOST` | `127.0.0.1` | Root variant only |
 | `PORT` | `3000` | Root variant only |

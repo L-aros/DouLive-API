@@ -14,7 +14,6 @@
 
 - `src/` — 本地 Node.js 服务
 - `vercel/` — 一键部署到 Vercel 的版本
-- `cloudflare/` — 部署到 Cloudflare Workers 的版本
 
 ## 功能
 
@@ -74,6 +73,7 @@ ACCESS_TOKEN=your-secret-token
   - `ip:port:user:pass`（冒号分隔简写，自动转换）
   - 反向代理模板：`https://proxy.example.com/fetch?url={url}`
 - `ACCESS_TOKEN`: 可选 token。带上有效 token 时可以启用预设代理或动态代理；不带 token 也能正常调用接口，只是会直连上游
+- `ROOM_CACHE_TTL_MS`: 响应缓存有效期，默认 `30000`（30 秒）
 
 > 有些房间匿名抓取会返回不完整数据，或者直接空 body。遇到这种情况，把浏览器里的 Cookie 配到 `DOUYIN_COOKIE`。
 
@@ -130,7 +130,6 @@ GET /api/room?web_rid=799834884246&proxy=http://127.0.0.1:7890
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
 - [SECURITY.md](./SECURITY.md)
 - [vercel/README.md](./vercel/README.md)
-- [cloudflare/README.md](./cloudflare/README.md)
 
 ## 当前清洗后的字段
 
