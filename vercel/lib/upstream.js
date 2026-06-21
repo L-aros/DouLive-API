@@ -8,7 +8,8 @@ const MOBILE_ROOM_INFO_URL = 'https://webcast.amemv.com/webcast/room/reflow/info
 const DEFAULT_AID = '6383';
 const GUEST_COOKIE_TTL_MS = 6 * 60 * 60 * 1000;
 const HTML_NONCE_TTL_MS = 6 * 60 * 60 * 1000;
-const DEFAULT_UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS || 10000);
+const DEFAULT_UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS || 7000);
+const ROOM_CACHE_TTL_MS = Number(process.env.ROOM_CACHE_TTL_MS || 30000);
 const DEFAULT_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0';
 const ROOM_HTML_STATE_REGEX = /(\{\\"state\\":.*?)\]\\n"\]\)/;
@@ -16,6 +17,7 @@ const ROOM_HTML_STATE_REGEX = /(\{\\"state\\":.*?)\]\\n"\]\)/;
 let guestCookieCache = null;
 let htmlNonceCache = null;
 const mobileCooldowns = new Map();
+const roomCache = new Map();
 
 function resolveProxyValue(options = {}) {
   if (options.allowProxy === false) {
@@ -592,6 +594,12 @@ async function fetchRoomEnter(webRid, options = {}) {
     throw new Error('webRid is required');
   }
 
+  const cacheKey = `${webRid}:${resolveProxyValue(options)}`;
+  const cached = roomCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < ROOM_CACHE_TTL_MS) {
+    return cached.result;
+  }
+
   const errors = [];
   const explicitCookie = options.cookie || process.env.DOUYIN_COOKIE || '';
   let secUid = options.secUid || options.uid || '';
@@ -601,6 +609,7 @@ async function fetchRoomEnter(webRid, options = {}) {
     const webResult = await fetchRoomInfoByWeb(webRid, options);
     const webSecUid = webResult?.payload?.data?.user?.sec_uid || '';
     webResult.payload = await enrichTimeFromMobile(webRid, secUid || webSecUid, webResult.payload, options);
+    roomCache.set(cacheKey, { ts: Date.now(), result: webResult });
     return webResult;
   } catch (error) {
     errors.push(`web: ${error.message}`);
@@ -608,7 +617,9 @@ async function fetchRoomEnter(webRid, options = {}) {
 
   if (secUid) {
     try {
-      return await fetchRoomInfoByMobile(webRid, secUid, options);
+      const mobileResult = await fetchRoomInfoByMobile(webRid, secUid, options);
+      roomCache.set(cacheKey, { ts: Date.now(), result: mobileResult });
+      return mobileResult;
     } catch (error) {
       errors.push(`mobile: ${error.message}`);
     }
@@ -620,6 +631,7 @@ async function fetchRoomEnter(webRid, options = {}) {
 
     if (htmlResult?.payload?.data?.data?.[0]?.stream_url) {
       htmlResult.payload = await enrichTimeFromMobile(webRid, secUid, htmlResult.payload, options);
+      roomCache.set(cacheKey, { ts: Date.now(), result: htmlResult });
       return htmlResult;
     }
   } catch (error) {
@@ -628,7 +640,9 @@ async function fetchRoomEnter(webRid, options = {}) {
 
   if (secUid) {
     try {
-      return await fetchRoomInfoByMobile(webRid, secUid, options);
+      const mobileResult = await fetchRoomInfoByMobile(webRid, secUid, options);
+      roomCache.set(cacheKey, { ts: Date.now(), result: mobileResult });
+      return mobileResult;
     } catch (error) {
       errors.push(`mobile: ${error.message}`);
     }
@@ -636,6 +650,7 @@ async function fetchRoomEnter(webRid, options = {}) {
 
   if (htmlResult) {
     htmlResult.payload = await enrichTimeFromMobile(webRid, secUid, htmlResult.payload, options);
+    roomCache.set(cacheKey, { ts: Date.now(), result: htmlResult });
     return htmlResult;
   }
 
