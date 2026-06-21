@@ -4,7 +4,7 @@ const { normalizeRoom } = require('./normalize');
 
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || '127.0.0.1';
-const accessToken = process.env.ACCESS_TOKEN || process.env.API_KEY || '';
+const accessToken = process.env.ACCESS_TOKEN || '';
 
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
@@ -27,16 +27,8 @@ function getProvidedToken(request) {
   if (Array.isArray(tokenHeader)) {
     return tokenHeader[0] || '';
   }
-  if (tokenHeader) {
-    return tokenHeader;
-  }
 
-  const legacyApiKeyHeader = request.headers['x-api-key'];
-  if (Array.isArray(legacyApiKeyHeader)) {
-    return legacyApiKeyHeader[0] || '';
-  }
-
-  return legacyApiKeyHeader || '';
+  return tokenHeader || '';
 }
 
 function getRequestAccessContext(request) {

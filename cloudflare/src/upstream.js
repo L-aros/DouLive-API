@@ -349,7 +349,7 @@ async function fetchRoomInfoByWeb(webRid, env, options = {}) {
           }
           return {
             payload,
-            upstream: { status: response.status, aid, url: requestConfig.url },
+            upstream: { status: response.status, aid, url: requestConfig.url, proxyUsed: Boolean(resolveProxyValue(options, env)) },
           };
         } catch (error) {
           errors.push(`${requestConfig.label}/${attempt.label}: ${error.message}`);
@@ -393,7 +393,7 @@ async function fetchRoomInfoByHtml(webRid, env, options = {}) {
 
   return {
     payload: result.payload,
-    upstream: { status: response.status, aid, url },
+    upstream: { status: response.status, aid, url, proxyUsed: Boolean(resolveProxyValue(options, env)) },
     secUid: result.secUid,
   };
 }
@@ -468,7 +468,7 @@ async function fetchRoomInfoByMobile(webRid, secUid, env, options = {}) {
 
   return {
     payload: buildMobileFallbackPayload(room),
-    upstream: { status: response.status, aid, url: url.toString() },
+    upstream: { status: response.status, aid, url: url.toString(), proxyUsed: Boolean(resolveProxyValue(options, env)) },
   };
 }
 

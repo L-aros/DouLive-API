@@ -17,11 +17,11 @@ function getProvidedToken(request) {
     return authHeader.slice('Bearer '.length).trim();
   }
 
-  return request.headers.get('x-token') || request.headers.get('x-api-key') || '';
+  return request.headers.get('x-token') || '';
 }
 
 function getRequestAccessContext(request, env) {
-  const configuredToken = env.ACCESS_TOKEN || env.API_KEY || '';
+  const configuredToken = env.ACCESS_TOKEN || '';
   const providedToken = getProvidedToken(request);
   const tokenConfigured = Boolean(configuredToken);
   const tokenProvided = Boolean(providedToken);

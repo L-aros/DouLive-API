@@ -30,9 +30,6 @@
 - `X-Token: <ACCESS_TOKEN>`
 - `Authorization: Bearer <ACCESS_TOKEN>`
 
-兼容旧写法：
-- `X-API-Key: <ACCESS_TOKEN>`
-
 ## 代理配置
 
 ### 静态代理

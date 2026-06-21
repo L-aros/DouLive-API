@@ -15,20 +15,12 @@ function getProvidedToken(req) {
   if (Array.isArray(tokenHeader)) {
     return tokenHeader[0] || '';
   }
-  if (tokenHeader) {
-    return tokenHeader;
-  }
 
-  const legacyApiKeyHeader = req.headers['x-api-key'];
-  if (Array.isArray(legacyApiKeyHeader)) {
-    return legacyApiKeyHeader[0] || '';
-  }
-
-  return legacyApiKeyHeader || '';
+  return tokenHeader || '';
 }
 
 function getRequestAccessContext(req) {
-  const configuredToken = process.env.ACCESS_TOKEN || process.env.API_KEY || '';
+  const configuredToken = process.env.ACCESS_TOKEN || '';
   const providedToken = getProvidedToken(req);
   const tokenConfigured = Boolean(configuredToken);
   const tokenProvided = Boolean(providedToken);
