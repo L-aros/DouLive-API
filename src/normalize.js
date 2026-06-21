@@ -144,7 +144,21 @@ function normalizeRoom(payload, webRid, upstream) {
       viewersText: roomViewStats.display_long || stats.user_count_str || room.user_count_str || '',
       viewersShort: roomViewStats.display_short || room.user_count_str || '',
       totalViewersText: stats.total_user_str || '',
-      likes: room.like_count ?? stats.like_count ?? null
+      totalViewers: stats.total_user ?? null,
+      likes: room.like_count ?? stats.like_count ?? null,
+      commentCount: stats.comment_count ?? null,
+      followCount: stats.follow_count ?? null,
+      giftUvCount: stats.gift_uv_count ?? null,
+      enterCount: stats.enter_count ?? null,
+      popularity: room.popularity ?? null,
+      popularityText: room.popularity_str ?? null,
+      diggCount: stats.digg_count ?? null,
+      fanTicket: stats.fan_ticket ?? null,
+      money: stats.money ?? null,
+      welfareDonationAmount: stats.welfare_donation_amount ?? null,
+      userCountComposition: stats.user_count_composition ?? null,
+      upRightStats: stats.up_right_stats_str ?? null,
+      upRightStatsComplete: stats.up_right_stats_str_complete ?? null
     },
     time: {
       createTime: room.create_time ?? null,

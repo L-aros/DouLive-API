@@ -155,7 +155,7 @@ GET /api/room?web_rid=799834884246&proxy=http://127.0.0.1:7890
 - `room`: 房间 ID、标题、状态、封面、二维码
 - `owner`: 主播 ID、sec_uid、昵称、头像
 - `viewerContext`: 当前登录态、关注状态、订阅状态
-- `stats`: 在线人数、累计观看、点赞数
+- `stats`: 在线人数、累计观看、点赞数，以及基于 mobile fallback best-effort 补充的评论数、关注数、送礼人数、进房次数、热度、右上角统计等字段
 - `time`: `createTime`、`startTime`、`finishTime`（best-effort，从 mobile fallback 补充）
 - `category`: 分类、子分类、游戏标签
 - `stream`: 默认清晰度、FLV/HLS 地址、可选清晰度
