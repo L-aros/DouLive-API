@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/L-aros/DouLive-API/actions/workflows/ci.yml/badge.svg)](https://github.com/L-aros/DouLive-API/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/L-aros/DouLive-API)](./LICENSE)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/L-aros/DouLive-API&root-directory=vercel&env=ACCESS_TOKEN,DOUYIN_COOKIE,UPSTREAM_TIMEOUT_MS,UPSTREAM_PROXY_URL)
 
 一个轻量的 Node.js API，用来代理上游：
 
@@ -14,6 +13,26 @@
 
 - `src/` — 本地 Node.js 服务
 - `vercel/` — 一键部署到 Vercel 的版本
+
+## Vercel 一键部署
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/L-aros/DouLive-API&root-directory=vercel&env=ACCESS_TOKEN,DOUYIN_COOKIE,UPSTREAM_TIMEOUT_MS,UPSTREAM_PROXY_URL)
+
+点击上方按钮，Vercel 会自动 fork 仓库并部署到你的账号下。部署前需要配置以下环境变量：
+
+| 变量 | 是否必填 | 说明 |
+|---|---|---|
+| `ACCESS_TOKEN` | 推荐 | 启用预设代理/动态代理的 token |
+| `DOUYIN_COOKIE` | 可选 | 浏览器 Cookie，部分房间能拿到更完整的数据 |
+| `UPSTREAM_PROXY_URL` | 可选 | 预设代理地址，配合 token 使用 |
+| `UPSTREAM_TIMEOUT_MS` | 可选 | 上游请求超时，默认 `7000`（ms） |
+
+部署完成后：
+1. 访问 `/api/health` 确认服务正常
+2. 访问 `/api/room?web_rid=<房间号>` 查询房间数据
+3. 如需使用代理，在请求中带上 `token=<ACCESS_TOKEN>` 或 `X-Token: <ACCESS_TOKEN>` 请求头
+
+> 详细的 Vercel 部署说明见 [vercel/README.md](./vercel/README.md)
 
 ## 功能
 
