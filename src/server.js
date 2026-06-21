@@ -17,7 +17,12 @@ function isLoopbackAddress(address) {
   return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
 }
 
-function getProvidedToken(request) {
+function getProvidedToken(request, requestUrl) {
+  const queryToken = requestUrl?.searchParams?.get('token');
+  if (queryToken) {
+    return queryToken.trim();
+  }
+
   const authHeader = request.headers.authorization;
   if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     return authHeader.slice('Bearer '.length).trim();
@@ -31,8 +36,8 @@ function getProvidedToken(request) {
   return tokenHeader || '';
 }
 
-function getRequestAccessContext(request) {
-  const providedToken = getProvidedToken(request);
+function getRequestAccessContext(request, requestUrl) {
+  const providedToken = getProvidedToken(request, requestUrl);
   const tokenConfigured = Boolean(accessToken);
   const tokenProvided = Boolean(providedToken);
   const hasValidToken = tokenConfigured && tokenProvided && providedToken === accessToken;
@@ -82,7 +87,7 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === 'GET' && isRoomRoute(requestUrl.pathname)) {
-    const access = getRequestAccessContext(request);
+    const access = getRequestAccessContext(request, requestUrl);
     if (!access.ok) {
       return sendJson(response, access.status, {
         ok: false,

@@ -11,7 +11,13 @@ function jsonResponse(payload, status = 200) {
   });
 }
 
-function getProvidedToken(request) {
+function getProvidedToken(request, parsedUrl) {
+  const url = parsedUrl || new URL(request.url);
+  const queryToken = url.searchParams.get('token');
+  if (queryToken) {
+    return queryToken.trim();
+  }
+
   const authHeader = request.headers.get('authorization') || '';
   if (authHeader.startsWith('Bearer ')) {
     return authHeader.slice('Bearer '.length).trim();
@@ -20,9 +26,9 @@ function getProvidedToken(request) {
   return request.headers.get('x-token') || '';
 }
 
-function getRequestAccessContext(request, env) {
+function getRequestAccessContext(request, env, parsedUrl) {
   const configuredToken = env.ACCESS_TOKEN || '';
-  const providedToken = getProvidedToken(request);
+  const providedToken = getProvidedToken(request, parsedUrl);
   const tokenConfigured = Boolean(configuredToken);
   const tokenProvided = Boolean(providedToken);
   const hasValidToken = tokenConfigured && tokenProvided && providedToken === configuredToken;
@@ -68,7 +74,7 @@ export default {
     }
 
     if (request.method === 'GET' && isRoomRoute(url.pathname)) {
-      const access = getRequestAccessContext(request, env);
+      const access = getRequestAccessContext(request, env, url);
       if (!access.ok) {
         return jsonResponse({ ok: false, error: access.error }, access.status);
       }

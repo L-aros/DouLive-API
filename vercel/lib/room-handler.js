@@ -6,6 +6,11 @@ function sendJson(res, statusCode, payload) {
 }
 
 function getProvidedToken(req) {
+  const queryToken = req.query?.token;
+  if (queryToken) {
+    return String(queryToken).trim();
+  }
+
   const authHeader = req.headers.authorization;
   if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     return authHeader.slice('Bearer '.length).trim();
