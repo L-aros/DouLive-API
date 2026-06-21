@@ -1,0 +1,10 @@
+{
+  "name": "doulive-api-vercel",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "sm-crypto": "^0.3.13"
+  }
+}

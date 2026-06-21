@@ -1,0 +1,11 @@
+{
+  "name": "doulive-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cleaned API wrapper for Douyin live room enter data",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --env-file-if-exists=.env --watch src/server.js",
+    "check": "node --check src/server.js && node --check src/upstream.js && node --check src/normalize.js && node --check src/abogus.js && node --check src/signature.js"
+  }
+}

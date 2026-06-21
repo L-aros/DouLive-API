@@ -1,0 +1,15 @@
+{
+  "name": "doulive-api-cloudflare",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "sm-crypto": "^0.3.13"
+  },
+  "devDependencies": {
+    "wrangler": "^4.20.0"
+  }
+}

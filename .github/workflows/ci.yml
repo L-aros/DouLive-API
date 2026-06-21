@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check root project
+        run: npm run check
+
+      - name: Check Vercel variant
+        run: |
+          node --check vercel/lib/normalize.js
+          node --check vercel/lib/signature.js
+          node --check vercel/lib/abogus.js
+          node --check vercel/lib/upstream.js
+          node --check vercel/lib/room-handler.js
+          node --check vercel/api/health.js
+          node --check vercel/api/room.js
+          node --check 'vercel/api/room/[webRid].js'
+
+      - name: Check Cloudflare variant
+        run: |
+          node --check cloudflare/src/normalize.js
+          node --check cloudflare/src/signature.js
+          node --check cloudflare/src/abogus.js
+          node --check cloudflare/src/upstream.js
+          node --check cloudflare/src/index.js
