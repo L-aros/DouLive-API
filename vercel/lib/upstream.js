@@ -18,7 +18,9 @@ let htmlNonceCache = null;
 let mobileCooldownUntil = 0;
 
 function resolveProxyValue(options = {}) {
-  return (options.proxy || process.env.UPSTREAM_PROXY_URL || '').trim();
+  if (options.proxy) return options.proxy.trim();
+  if (options.authenticated) return (process.env.UPSTREAM_PROXY_URL || '').trim();
+  return '';
 }
 
 function isProxyTemplate(proxy) {

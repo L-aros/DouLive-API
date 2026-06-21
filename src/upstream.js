@@ -40,7 +40,9 @@ function buildRoomEnterParams(webRid, aid = DEFAULT_AID) {
 }
 
 function resolveProxyValue(options = {}) {
-  return (options.proxy || process.env.UPSTREAM_PROXY_URL || '').trim();
+  if (options.proxy) return options.proxy.trim();
+  if (options.authenticated) return (process.env.UPSTREAM_PROXY_URL || '').trim();
+  return '';
 }
 
 function isProxyTemplate(proxy) {

@@ -20,24 +20,8 @@ function getProvidedApiKey(request) {
   return request.headers.get('x-api-key') || '';
 }
 
-function authorizeRoomRequest(request, env) {
-  if (!env.API_KEY) {
-    return {
-      ok: false,
-      status: 500,
-      error: 'API_KEY is required for the Cloudflare Worker deployment to avoid exposing the upstream publicly.',
-    };
-  }
-
-  if (getProvidedApiKey(request) !== env.API_KEY) {
-    return {
-      ok: false,
-      status: 401,
-      error: 'Unauthorized. Provide the API key via X-API-Key or Authorization: Bearer <key>.',
-    };
-  }
-
-  return { ok: true };
+function isCallerAuthenticated(request, env) {
+  return Boolean(env.API_KEY) && getProvidedApiKey(request) === env.API_KEY;
 }
 
 function getWebRid(url) {
@@ -63,11 +47,7 @@ export default {
     }
 
     if (request.method === 'GET' && isRoomRoute(url.pathname)) {
-      const auth = authorizeRoomRequest(request, env);
-      if (!auth.ok) {
-        return jsonResponse({ ok: false, error: auth.error }, auth.status);
-      }
-
+      const authenticated = isCallerAuthenticated(request, env);
       const webRid = getWebRid(url);
       const aid = url.searchParams.get('aid') || undefined;
       const secUid = url.searchParams.get('sec_uid') || url.searchParams.get('secUid') || url.searchParams.get('uid') || undefined;
@@ -81,7 +61,7 @@ export default {
       }
 
       try {
-        const result = await fetchRoomEnter(webRid, env, { aid, secUid, proxy });
+        const result = await fetchRoomEnter(webRid, env, { aid, secUid, proxy, authenticated });
         const cleaned = normalizeRoom(result.payload, webRid, result.upstream);
         return jsonResponse(cleaned, 200);
       } catch (error) {

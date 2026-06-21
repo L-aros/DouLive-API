@@ -19,26 +19,9 @@ function getProvidedApiKey(req) {
   return apiKeyHeader || '';
 }
 
-function authorizeApiRequest(req) {
+function isCallerAuthenticated(req) {
   const configuredApiKey = process.env.API_KEY || '';
-
-  if (!configuredApiKey) {
-    return {
-      ok: false,
-      status: 500,
-      error: 'API_KEY is required for the Vercel deployment to avoid exposing the upstream publicly.'
-    };
-  }
-
-  if (getProvidedApiKey(req) !== configuredApiKey) {
-    return {
-      ok: false,
-      status: 401,
-      error: 'Unauthorized. Provide the API key via X-API-Key or Authorization: Bearer <key>.'
-    };
-  }
-
-  return { ok: true };
+  return Boolean(configuredApiKey) && getProvidedApiKey(req) === configuredApiKey;
 }
 
 async function handleRoomRequest(req, res, explicitWebRid) {
@@ -49,14 +32,7 @@ async function handleRoomRequest(req, res, explicitWebRid) {
     });
   }
 
-  const auth = authorizeApiRequest(req);
-  if (!auth.ok) {
-    return sendJson(res, auth.status, {
-      ok: false,
-      error: auth.error
-    });
-  }
-
+  const authenticated = isCallerAuthenticated(req);
   const webRid = explicitWebRid || req.query.web_rid || '';
   const aid = req.query.aid || undefined;
   const secUid = req.query.sec_uid || req.query.secUid || req.query.uid || undefined;
@@ -73,7 +49,8 @@ async function handleRoomRequest(req, res, explicitWebRid) {
     const result = await fetchRoomEnter(webRid, {
       aid,
       secUid,
-      proxy
+      proxy,
+      authenticated
     });
     const cleaned = normalizeRoom(result.payload, webRid, result.upstream);
     return sendJson(res, 200, cleaned);

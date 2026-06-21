@@ -73,7 +73,7 @@ API_KEY=your-secret-key
   - `http://user:pass@ip:port`
   - `ip:port:user:pass`（冒号分隔简写，自动转换）
   - 反向代理模板：`https://proxy.example.com/fetch?url={url}`
-- `API_KEY`: 如果设置，`/api/room` 需要 `X-API-Key` 或 `Authorization: Bearer <key>`
+- `API_KEY`: 如果设置，携带正确 key 的调用者会自动走预设代理；不携带 key 的调用者仍可访问接口，但只能直连上游
 
 > 有些房间匿名抓取会返回不完整数据，或者直接空 body。遇到这种情况，把浏览器里的 Cookie 配到 `DOUYIN_COOKIE`。
 

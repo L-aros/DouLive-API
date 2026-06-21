@@ -21,10 +21,12 @@
 - `GET /api/room?web_rid=799834884246`
 - `GET /api/room/799834884246`
 
-## 鉴权
+## 鉴权与代理
 
-`/api/room` 必须携带以下任一请求头：
+- 不带 API key：可正常访问接口，但只能直连上游
+- 带 API key：除了访问接口外，还会自动走预设代理（`UPSTREAM_PROXY_URL`）
 
+请求头支持：
 - `X-API-Key: <API_KEY>`
 - `Authorization: Bearer <API_KEY>`
 

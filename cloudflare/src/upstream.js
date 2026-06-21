@@ -21,7 +21,9 @@ function getTimeoutMs(env) {
 }
 
 function resolveProxyValue(options = {}, env) {
-  return String(options.proxy || env.UPSTREAM_PROXY_URL || '').trim();
+  if (options.proxy) return String(options.proxy).trim();
+  if (options.authenticated) return String(env.UPSTREAM_PROXY_URL || '').trim();
+  return '';
 }
 
 function isProxyTemplate(proxy) {

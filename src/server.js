@@ -13,10 +13,6 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload, null, 2));
 }
 
-function isLoopbackAddress(address) {
-  return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
-}
-
 function getProvidedApiKey(request) {
   const authHeader = request.headers.authorization;
   if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
@@ -31,12 +27,8 @@ function getProvidedApiKey(request) {
   return apiKeyHeader || '';
 }
 
-function authorizeApiRequest(request) {
-  if (apiKey) {
-    return getProvidedApiKey(request) === apiKey;
-  }
-
-  return isLoopbackAddress(request.socket.remoteAddress || '');
+function isCallerAuthenticated(request) {
+  return Boolean(apiKey) && getProvidedApiKey(request) === apiKey;
 }
 
 function getWebRid(requestUrl) {
@@ -64,15 +56,7 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === 'GET' && isRoomRoute(requestUrl.pathname)) {
-    if (!authorizeApiRequest(request)) {
-      return sendJson(response, apiKey ? 401 : 403, {
-        ok: false,
-        error: apiKey
-          ? 'Unauthorized. Provide the API key via X-API-Key or Authorization: Bearer <key>.'
-          : 'Forbidden. Remote API access is disabled unless the request comes from localhost or API_KEY is configured.'
-      });
-    }
-
+    const authenticated = isCallerAuthenticated(request);
     const webRid = getWebRid(requestUrl);
     const aid = requestUrl.searchParams.get('aid') || undefined;
     const secUid =
@@ -90,7 +74,12 @@ const server = http.createServer(async (request, response) => {
     }
 
     try {
-      const result = await fetchRoomEnter(webRid, { aid, secUid, proxy });
+      const result = await fetchRoomEnter(webRid, {
+        aid,
+        secUid,
+        proxy,
+        authenticated
+      });
       const cleaned = normalizeRoom(result.payload, webRid, result.upstream);
       return sendJson(response, 200, cleaned);
     } catch (error) {
@@ -111,8 +100,8 @@ server.listen(port, host, () => {
   console.log(`DouLive API listening on http://${host}:${port}`);
   console.log('Use GET /api/room?web_rid=799834884246');
   if (apiKey) {
-    console.log('API auth mode: require X-API-Key or Authorization: Bearer <key> for /api/room requests');
+    console.log('API_KEY set: callers with key get preset proxy; callers without key get direct upstream only');
   } else {
-    console.log('API auth mode: localhost-only for /api/room requests (set API_KEY to require a key on all clients)');
+    console.log('No API_KEY set: all callers use direct upstream; set API_KEY to enable preset proxy for authenticated callers');
   }
 });
