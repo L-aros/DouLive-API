@@ -11,17 +11,38 @@ function jsonResponse(payload, status = 200) {
   });
 }
 
-function getProvidedApiKey(request) {
+function getProvidedToken(request) {
   const authHeader = request.headers.get('authorization') || '';
   if (authHeader.startsWith('Bearer ')) {
     return authHeader.slice('Bearer '.length).trim();
   }
 
-  return request.headers.get('x-api-key') || '';
+  return request.headers.get('x-token') || request.headers.get('x-api-key') || '';
 }
 
-function isCallerAuthenticated(request, env) {
-  return Boolean(env.API_KEY) && getProvidedApiKey(request) === env.API_KEY;
+function getRequestAccessContext(request, env) {
+  const configuredToken = env.ACCESS_TOKEN || env.API_KEY || '';
+  const providedToken = getProvidedToken(request);
+  const tokenConfigured = Boolean(configuredToken);
+  const tokenProvided = Boolean(providedToken);
+  const hasValidToken = tokenConfigured && tokenProvided && providedToken === configuredToken;
+
+  if (tokenProvided && !hasValidToken) {
+    return {
+      ok: false,
+      status: 401,
+      error: 'Unauthorized. Provide a valid token via X-Token or Authorization: Bearer <token>.',
+      canUseProxy: false,
+    };
+  }
+
+  return {
+    ok: true,
+    canUseProxy: hasValidToken,
+    tokenConfigured,
+    tokenProvided,
+    hasValidToken,
+  };
 }
 
 function getWebRid(url) {
@@ -47,11 +68,22 @@ export default {
     }
 
     if (request.method === 'GET' && isRoomRoute(url.pathname)) {
-      const authenticated = isCallerAuthenticated(request, env);
+      const access = getRequestAccessContext(request, env);
+      if (!access.ok) {
+        return jsonResponse({ ok: false, error: access.error }, access.status);
+      }
+
       const webRid = getWebRid(url);
       const aid = url.searchParams.get('aid') || undefined;
       const secUid = url.searchParams.get('sec_uid') || url.searchParams.get('secUid') || url.searchParams.get('uid') || undefined;
       const proxy = url.searchParams.get('proxy') || undefined;
+
+      if (proxy && !access.canUseProxy) {
+        return jsonResponse({
+          ok: false,
+          error: 'Token required to use proxy features. Without a token, the endpoint is still available but will call the upstream directly.',
+        }, 403);
+      }
 
       if (!webRid) {
         return jsonResponse({
@@ -61,7 +93,12 @@ export default {
       }
 
       try {
-        const result = await fetchRoomEnter(webRid, env, { aid, secUid, proxy, authenticated });
+        const result = await fetchRoomEnter(webRid, env, {
+          aid,
+          secUid,
+          proxy: access.canUseProxy ? proxy : '',
+          allowProxy: access.canUseProxy,
+        });
         const cleaned = normalizeRoom(result.payload, webRid, result.upstream);
         return jsonResponse(cleaned, 200);
       } catch (error) {

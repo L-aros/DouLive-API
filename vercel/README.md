@@ -1,6 +1,6 @@
 # DouLive API for Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/L-aros/DouLive-API&root-directory=vercel&env=API_KEY,DOUYIN_COOKIE,UPSTREAM_TIMEOUT_MS,UPSTREAM_PROXY_URL)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/L-aros/DouLive-API&root-directory=vercel&env=ACCESS_TOKEN,DOUYIN_COOKIE,UPSTREAM_TIMEOUT_MS,UPSTREAM_PROXY_URL)
 
 这个目录是一个可直接部署到 Vercel 的版本。
 
@@ -9,7 +9,7 @@
 1. 把当前仓库导入 Vercel
 2. 在项目设置里把 **Root Directory** 设为 `vercel`
 3. 配置环境变量：
-   - `API_KEY` 必填
+   - `ACCESS_TOKEN` 可选
    - `DOUYIN_COOKIE` 可选
    - `UPSTREAM_TIMEOUT_MS` 可选，默认 `10000`
    - `UPSTREAM_PROXY_URL` 可选
@@ -21,19 +21,22 @@
 - `GET /api/room?web_rid=799834884246`
 - `GET /api/room/799834884246`
 
-## 鉴权与代理
+## Token 与代理权限
 
-- 不带 API key：可正常访问接口，但只能直连上游
-- 带 API key：除了访问接口外，还会自动走预设代理（`UPSTREAM_PROXY_URL`）
+`/api/room` 在 Vercel 版本中默认也可以直接调用。
 
-请求头支持：
-- `X-API-Key: <API_KEY>`
-- `Authorization: Bearer <API_KEY>`
+只有当你想启用**预设代理**或**动态代理**时，才需要携带以下任一请求头：
+
+- `X-Token: <ACCESS_TOKEN>`
+- `Authorization: Bearer <ACCESS_TOKEN>`
+
+兼容旧写法：
+- `X-API-Key: <ACCESS_TOKEN>`
 
 ## 代理配置
 
 ### 静态代理
-通过环境变量配置：
+通过环境变量配置。**只有在请求里提供有效 token 时才会启用**：
 
 ```env
 UPSTREAM_PROXY_URL=http://127.0.0.1:7890
@@ -50,10 +53,11 @@ Node/Vercel 版本支持以下代理格式：
    - `https://proxy.example.com/fetch?url={url}`
 
 ### 动态代理
-每次请求可通过 query 参数覆盖：
+每次请求可通过 query 参数覆盖。**需要有效 token**：
 
 ```http
 GET /api/room?web_rid=799834884246&proxy=http://127.0.0.1:7890
 ```
 
 如果动态代理为空，则回退到 `UPSTREAM_PROXY_URL`；两者都为空时，默认直连上游。
+没有 token 时接口仍然可用，但会忽略预设代理与动态代理，直接访问上游。

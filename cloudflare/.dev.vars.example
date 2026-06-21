@@ -1,7 +1,8 @@
-API_KEY=change-me
+ACCESS_TOKEN=change-me
 DOUYIN_COOKIE=
 UPSTREAM_TIMEOUT_MS=10000
 # Workers cannot dial a raw HTTP proxy like 127.0.0.1:7890.
+# The preset proxy is only used when a valid token is provided.
 # Supported formats for Workers (reverse-proxy template only):
 #   https://proxy.example.com/fetch?url={url}
 #   https://proxy.example.com/fetch?url=

@@ -13,7 +13,7 @@ const ROOM_HTML_STATE_REGEX = /(\{\\"state\\":.*?)\]\\n"\]\)/;
 
 let guestCookieCache = null;
 let htmlNonceCache = null;
-let mobileCooldownUntil = 0;
+const mobileCooldowns = new Map();
 
 function getTimeoutMs(env) {
   const value = Number(env.UPSTREAM_TIMEOUT_MS || 10000);
@@ -21,9 +21,11 @@ function getTimeoutMs(env) {
 }
 
 function resolveProxyValue(options = {}, env) {
-  if (options.proxy) return String(options.proxy).trim();
-  if (options.authenticated) return String(env.UPSTREAM_PROXY_URL || '').trim();
-  return '';
+  if (options.allowProxy === false) {
+    return '';
+  }
+
+  return String(options.proxy || env.UPSTREAM_PROXY_URL || '').trim();
 }
 
 function isProxyTemplate(proxy) {
@@ -396,6 +398,11 @@ async function fetchRoomInfoByHtml(webRid, env, options = {}) {
   };
 }
 
+function getMobileCooldownKey(options = {}, env) {
+  const proxy = resolveProxyValue(options, env);
+  return proxy ? `proxy:${proxy}` : 'direct';
+}
+
 function createMobileUpstreamError(payload) {
   const statusCode = Number(payload?.status_code);
   const message =
@@ -418,7 +425,9 @@ function createMobileUpstreamError(payload) {
 async function fetchRoomInfoByMobile(webRid, secUid, env, options = {}) {
   if (!secUid || typeof secUid !== 'string') throw new Error('Mobile fallback requires secUid');
 
-  if (Date.now() < mobileCooldownUntil) {
+  const cooldownKey = getMobileCooldownKey(options, env);
+  const cooldownUntil = mobileCooldowns.get(cooldownKey) || 0;
+  if (Date.now() < cooldownUntil) {
     throw Object.assign(
       new Error('Mobile fallback skipped due to recent upstream rejection (cooldown active)'),
       { code: 'MOBILE_COOLDOWN', riskSuspected: true }
@@ -449,7 +458,7 @@ async function fetchRoomInfoByMobile(webRid, secUid, env, options = {}) {
   if (payload?.status_code !== 0) {
     const error = createMobileUpstreamError(payload);
     if (error.riskSuspected) {
-      mobileCooldownUntil = Date.now() + 60_000;
+      mobileCooldowns.set(cooldownKey, Date.now() + 60_000);
     }
     throw error;
   }

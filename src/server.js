@@ -4,7 +4,7 @@ const { normalizeRoom } = require('./normalize');
 
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || '127.0.0.1';
-const apiKey = process.env.API_KEY || '';
+const accessToken = process.env.ACCESS_TOKEN || process.env.API_KEY || '';
 
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
@@ -13,22 +13,56 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload, null, 2));
 }
 
-function getProvidedApiKey(request) {
+function isLoopbackAddress(address) {
+  return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
+}
+
+function getProvidedToken(request) {
   const authHeader = request.headers.authorization;
   if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     return authHeader.slice('Bearer '.length).trim();
   }
 
-  const apiKeyHeader = request.headers['x-api-key'];
-  if (Array.isArray(apiKeyHeader)) {
-    return apiKeyHeader[0] || '';
+  const tokenHeader = request.headers['x-token'];
+  if (Array.isArray(tokenHeader)) {
+    return tokenHeader[0] || '';
+  }
+  if (tokenHeader) {
+    return tokenHeader;
   }
 
-  return apiKeyHeader || '';
+  const legacyApiKeyHeader = request.headers['x-api-key'];
+  if (Array.isArray(legacyApiKeyHeader)) {
+    return legacyApiKeyHeader[0] || '';
+  }
+
+  return legacyApiKeyHeader || '';
 }
 
-function isCallerAuthenticated(request) {
-  return Boolean(apiKey) && getProvidedApiKey(request) === apiKey;
+function getRequestAccessContext(request) {
+  const providedToken = getProvidedToken(request);
+  const tokenConfigured = Boolean(accessToken);
+  const tokenProvided = Boolean(providedToken);
+  const hasValidToken = tokenConfigured && tokenProvided && providedToken === accessToken;
+  const isLocalRequest = isLoopbackAddress(request.socket.remoteAddress || '');
+
+  if (tokenProvided && !hasValidToken) {
+    return {
+      ok: false,
+      status: 401,
+      error: 'Unauthorized. Provide a valid token via X-Token or Authorization: Bearer <token>.',
+      canUseProxy: false
+    };
+  }
+
+  return {
+    ok: true,
+    canUseProxy: hasValidToken,
+    isLocalRequest,
+    tokenConfigured,
+    tokenProvided,
+    hasValidToken
+  };
 }
 
 function getWebRid(requestUrl) {
@@ -56,7 +90,14 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === 'GET' && isRoomRoute(requestUrl.pathname)) {
-    const authenticated = isCallerAuthenticated(request);
+    const access = getRequestAccessContext(request);
+    if (!access.ok) {
+      return sendJson(response, access.status, {
+        ok: false,
+        error: access.error
+      });
+    }
+
     const webRid = getWebRid(requestUrl);
     const aid = requestUrl.searchParams.get('aid') || undefined;
     const secUid =
@@ -65,6 +106,13 @@ const server = http.createServer(async (request, response) => {
       requestUrl.searchParams.get('uid') ||
       undefined;
     const proxy = requestUrl.searchParams.get('proxy') || undefined;
+
+    if (proxy && !access.canUseProxy) {
+      return sendJson(response, 403, {
+        ok: false,
+        error: 'Token required to use proxy features. Without a token, the endpoint is still available but will call the upstream directly.'
+      });
+    }
 
     if (!webRid) {
       return sendJson(response, 400, {
@@ -77,8 +125,8 @@ const server = http.createServer(async (request, response) => {
       const result = await fetchRoomEnter(webRid, {
         aid,
         secUid,
-        proxy,
-        authenticated
+        proxy: access.canUseProxy ? proxy : '',
+        allowProxy: access.canUseProxy
       });
       const cleaned = normalizeRoom(result.payload, webRid, result.upstream);
       return sendJson(response, 200, cleaned);
@@ -99,9 +147,9 @@ const server = http.createServer(async (request, response) => {
 server.listen(port, host, () => {
   console.log(`DouLive API listening on http://${host}:${port}`);
   console.log('Use GET /api/room?web_rid=799834884246');
-  if (apiKey) {
-    console.log('API_KEY set: callers with key get preset proxy; callers without key get direct upstream only');
+  if (accessToken) {
+    console.log('Token mode: /api/room is publicly callable, but preset and dynamic proxy features require X-Token or Authorization: Bearer <token>.');
   } else {
-    console.log('No API_KEY set: all callers use direct upstream; set API_KEY to enable preset proxy for authenticated callers');
+    console.log('Token mode: no ACCESS_TOKEN configured, so all requests call the upstream directly and proxy features stay disabled.');
   }
 });

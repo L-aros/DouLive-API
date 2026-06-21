@@ -15,12 +15,14 @@ const ROOM_HTML_STATE_REGEX = /(\{\\"state\\":.*?)\]\\n"\]\)/;
 
 let guestCookieCache = null;
 let htmlNonceCache = null;
-let mobileCooldownUntil = 0;
+const mobileCooldowns = new Map();
 
 function resolveProxyValue(options = {}) {
-  if (options.proxy) return options.proxy.trim();
-  if (options.authenticated) return (process.env.UPSTREAM_PROXY_URL || '').trim();
-  return '';
+  if (options.allowProxy === false) {
+    return '';
+  }
+
+  return (options.proxy || process.env.UPSTREAM_PROXY_URL || '').trim();
 }
 
 function isProxyTemplate(proxy) {
@@ -461,6 +463,11 @@ async function fetchRoomInfoByHtml(webRid, options = {}) {
   };
 }
 
+function getMobileCooldownKey(options = {}) {
+  const proxy = resolveProxyValue(options);
+  return proxy ? `proxy:${proxy}` : 'direct';
+}
+
 function createMobileUpstreamError(payload) {
   const statusCode = Number(payload?.status_code);
   const message =
@@ -485,7 +492,9 @@ async function fetchRoomInfoByMobile(webRid, secUid, options = {}) {
     throw new Error('Mobile fallback requires secUid');
   }
 
-  if (Date.now() < mobileCooldownUntil) {
+  const cooldownKey = getMobileCooldownKey(options);
+  const cooldownUntil = mobileCooldowns.get(cooldownKey) || 0;
+  if (Date.now() < cooldownUntil) {
     throw Object.assign(
       new Error('Mobile fallback skipped due to recent upstream rejection (cooldown active)'),
       { code: 'MOBILE_COOLDOWN', riskSuspected: true }
@@ -519,7 +528,7 @@ async function fetchRoomInfoByMobile(webRid, secUid, options = {}) {
   if (payload?.status_code !== 0) {
     const error = createMobileUpstreamError(payload);
     if (error.riskSuspected) {
-      mobileCooldownUntil = Date.now() + 60_000;
+      mobileCooldowns.set(cooldownKey, Date.now() + 60_000);
     }
     throw error;
   }

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/L-aros/DouLive-API/actions/workflows/ci.yml/badge.svg)](https://github.com/L-aros/DouLive-API/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/L-aros/DouLive-API)](./LICENSE)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/L-aros/DouLive-API&root-directory=vercel&env=API_KEY,DOUYIN_COOKIE,UPSTREAM_TIMEOUT_MS,UPSTREAM_PROXY_URL)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/L-aros/DouLive-API&root-directory=vercel&env=ACCESS_TOKEN,DOUYIN_COOKIE,UPSTREAM_TIMEOUT_MS,UPSTREAM_PROXY_URL)
 
 一个轻量的 Node.js API，用来代理上游：
 
@@ -25,7 +25,7 @@
   - `GET /api/room?web_rid=799834884246`
   - `GET /api/room/799834884246`
 - 可选通过 `DOUYIN_COOKIE` 传入浏览器 Cookie，拿到更完整的数据
-- 默认仅监听 `127.0.0.1`，并支持通过 `API_KEY` 做接口鉴权
+- `/api/room` 默认可直接调用；只有在提供有效 token 时，才允许使用预设代理或动态代理
 
 ## 快速开始
 
@@ -62,18 +62,18 @@ PORT=3000
 HOST=127.0.0.1
 UPSTREAM_TIMEOUT_MS=10000
 UPSTREAM_PROXY_URL=
-API_KEY=your-secret-key
+ACCESS_TOKEN=your-secret-token
 ```
 
 - `DOUYIN_COOKIE`: 可选，部分房间能拿到更完整的数据
 - `HOST`: 默认 `127.0.0.1`，建议保持本地监听
 - `UPSTREAM_TIMEOUT_MS`: 上游请求超时，默认 `10000`
-- `UPSTREAM_PROXY_URL`: 可选静态代理；Node 版本支持以下格式：
+- `UPSTREAM_PROXY_URL`: 可选预设代理；**只有在提供有效 token 时才会使用**。Node 版本支持以下格式：
   - `http://ip:port`
   - `http://user:pass@ip:port`
   - `ip:port:user:pass`（冒号分隔简写，自动转换）
   - 反向代理模板：`https://proxy.example.com/fetch?url={url}`
-- `API_KEY`: 如果设置，携带正确 key 的调用者会自动走预设代理；不携带 key 的调用者仍可访问接口，但只能直连上游
+- `ACCESS_TOKEN`: 可选 token。带上有效 token 时可以启用预设代理或动态代理；不带 token 也能正常调用接口，只是会直连上游
 
 > 有些房间匿名抓取会返回不完整数据，或者直接空 body。遇到这种情况，把浏览器里的 Cookie 配到 `DOUYIN_COOKIE`。
 
@@ -85,13 +85,20 @@ API_KEY=your-secret-key
 GET /api/room?web_rid=799834884246
 ```
 
-### 2. 动态代理覆盖（可选）
+### 2. 动态代理覆盖（可选，需有效 token）
 
 ```http
 GET /api/room?web_rid=799834884246&proxy=http://127.0.0.1:7890
 ```
 
+支持的动态代理格式：
+- `http://ip:port`
+- `http://user:pass@ip:port`
+- `ip:port:user:pass`
+- `https://proxy.example.com/fetch?url={url}`
+
 如果 `proxy` 留空，则优先使用静态 `UPSTREAM_PROXY_URL`；两者都为空时，默认直连上游。
+没有 token 时接口仍然可用，但所有代理功能会被禁用。
 
 ### 3. 返回结构示例
 
