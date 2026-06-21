@@ -1,10 +1,20 @@
 # DouLive API
 
+[![CI](https://github.com/L-aros/DouLive-API/actions/workflows/ci.yml/badge.svg)](https://github.com/L-aros/DouLive-API/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/L-aros/DouLive-API)](./LICENSE)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/L-aros/DouLive-API&root-directory=vercel&env=API_KEY,DOUYIN_COOKIE,UPSTREAM_TIMEOUT_MS,UPSTREAM_PROXY_URL)
+
 一个轻量的 Node.js API，用来代理上游：
 
 `https://live.douyin.com/webcast/room/web/enter/?aid=6383&web_rid=...`
 
 并把返回结果整理成更干净的结构，避免直接消费巨大的原始 body。
+
+## 部署目标
+
+- `src/` — 本地 Node.js 服务
+- `vercel/` — 一键部署到 Vercel 的版本
+- `cloudflare/` — 部署到 Cloudflare Workers 的版本
 
 ## 功能
 
@@ -16,6 +26,13 @@
   - `GET /api/room/799834884246`
 - 可选通过 `DOUYIN_COOKIE` 传入浏览器 Cookie，拿到更完整的数据
 - 默认仅监听 `127.0.0.1`，并支持通过 `API_KEY` 做接口鉴权
+
+## 快速开始
+
+```bash
+npm install
+npm start
+```
 
 ## 启动
 
@@ -96,6 +113,14 @@ GET /api/room?web_rid=799834884246&proxy=http://127.0.0.1:7890
 }
 ```
 
+## 仓库文档
+
+- [CHANGELOG.md](./CHANGELOG.md)
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [SECURITY.md](./SECURITY.md)
+- [vercel/README.md](./vercel/README.md)
+- [cloudflare/README.md](./cloudflare/README.md)
+
 ## 当前清洗后的字段
 
 - `room`: 房间 ID、标题、状态、封面、二维码
@@ -117,3 +142,7 @@ GET /api/room?web_rid=799834884246&proxy=http://127.0.0.1:7890
 - `room.status.isLive`: 同时根据 HLS 与 FLV 拉流地址判断
 
 如果后面你想继续精简字段，优先改 `src/normalize.js`。
+
+## License
+
+[MIT](./LICENSE)

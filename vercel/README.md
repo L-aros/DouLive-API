@@ -1,5 +1,7 @@
 # DouLive API for Vercel
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/L-aros/DouLive-API&root-directory=vercel&env=API_KEY,DOUYIN_COOKIE,UPSTREAM_TIMEOUT_MS,UPSTREAM_PROXY_URL)
+
 这个目录是一个可直接部署到 Vercel 的版本。
 
 ## 部署方式

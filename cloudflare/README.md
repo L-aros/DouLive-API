@@ -2,6 +2,8 @@
 
 这个目录是一个可以直接部署到 Cloudflare Workers 的版本。
 
+> 建议先 fork 或 clone 当前仓库，再通过 Wrangler 部署 `cloudflare/` 目录。
+
 ## 部署方式
 
 1. 进入 `cloudflare/`

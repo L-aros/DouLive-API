@@ -2,10 +2,29 @@
   "name": "doulive-api",
   "version": "0.1.0",
   "private": true,
-  "description": "Cleaned API wrapper for Douyin live room enter data",
+  "description": "Cleaned Douyin live room API with local, Vercel, and Cloudflare deployment targets",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/L-aros/DouLive-API.git"
+  },
+  "bugs": {
+    "url": "https://github.com/L-aros/DouLive-API/issues"
+  },
+  "homepage": "https://github.com/L-aros/DouLive-API#readme",
+  "keywords": [
+    "douyin",
+    "live",
+    "api",
+    "vercel",
+    "cloudflare-workers"
+  ],
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",
     "dev": "node --env-file-if-exists=.env --watch src/server.js",
     "check": "node --check src/server.js && node --check src/upstream.js && node --check src/normalize.js && node --check src/abogus.js && node --check src/signature.js"
+  },
+  "dependencies": {
+    "undici": "^7.13.0"
   }
 }
