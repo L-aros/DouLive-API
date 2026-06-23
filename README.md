@@ -13,6 +13,7 @@
 
 - `src/` — 本地 Node.js 服务
 - `vercel/` — 一键部署到 Vercel 的版本
+- `douyin-wss/` — 独立的常驻监听服务，提供直播间注册监听、当前场次累计统计 HTTP 接口，以及可选的 WebSocket 转发
 
 ## Vercel 一键部署
 
@@ -33,6 +34,17 @@
 3. 如需使用代理，在请求中带上 `token=<ACCESS_TOKEN>` 或 `X-Token: <ACCESS_TOKEN>` 请求头
 
 > 详细的 Vercel 部署说明见 [vercel/README.md](./vercel/README.md)
+
+## 实验性监听服务（douyin-wss）
+
+`douyin-wss/` 是一个单独运行的 Node.js 服务，用于：
+
+- 注册某个直播间并在无 WebSocket 客户端连接时继续常驻监听
+- 暴露 `GET /api/monitors/{webRid}/stats` 当前直播场次累计统计接口
+- 可选对接 PostgreSQL 做 monitor / session 持久化恢复
+- 可选向连接中的客户端转发实时 WebSocket 消息
+
+> 详细使用说明见 [douyin-wss/README.md](./douyin-wss/README.md)
 
 ## 功能
 
@@ -148,6 +160,7 @@ GET /api/room?web_rid=799834884246&proxy=http://127.0.0.1:7890
 - [CHANGELOG.md](./CHANGELOG.md)
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
 - [SECURITY.md](./SECURITY.md)
+- [douyin-wss/README.md](./douyin-wss/README.md)
 - [vercel/README.md](./vercel/README.md)
 
 ## 当前清洗后的字段

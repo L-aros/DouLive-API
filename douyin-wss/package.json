@@ -1,0 +1,17 @@
+{
+  "name": "douyin-wss",
+  "version": "1.0.0",
+  "description": "Douyin live WebSocket forwarder - direct WSS connection with stable ping/pong",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --env-file-if-exists=.env --watch server.js",
+    "check": "node --check server.js && node --check monitor-manager.js && node --check storage/index.js && node --check storage/postgres.js && node --check lib/upstream.js && node --check lib/normalize.js && node --check lib/abogus.js && node --check lib/signature.js"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "protobufjs": "^7.4.0",
+    "undici": "^7.13.0",
+    "ws": "^8.18.0"
+  }
+}
